@@ -25,7 +25,15 @@ def wsclose(ws):
 def wsmsg(ws, message):
     print('recieved message')
     json_message = json.loads(message)
-    pprint.pprint(json_message)
+    pprint.pprint(type(json_message))
+    candle = json_message['k']
+    close = candle['c']
+    high = candle['h']
+    low = candle['l']
+    vol = candle['v']
+    closedcandle = candle['x']
+    
+
 
 def printas():
     crs = client.account()['balances']
