@@ -92,10 +92,12 @@ def wsmsg(ws, message):
             if max_profit_percent - current_profit_percent > 0.01:
                 iscrypto = False
                 amt = amt * cur_price
+                print('sold', amt)
 
             elif avg25[-1] > last25[-1] or (cur_price - buy_price) / 100 < -0.03:
                 iscrypto = False
                 amt = amt * cur_price
+                print('sold', amt)
 
         else: 
             if last25[-1] > avg25[-1] and last25[-2] > avg25[-2] and last25[-3] <= last25[-3] and last25[-1] >= last25[-2] and last25[-3]:
@@ -103,6 +105,7 @@ def wsmsg(ws, message):
                 amt = amt / cur_price
                 buy_price = cur_price
                 max_profit_percent = 0
+                print('bought', buy_price)
 
 
     response = client.get_open_orders(coin.upper())
