@@ -8,11 +8,14 @@ import math
 
 start = time.time()
 
-testkey = 'MHQP3Wfw1iRbxnphFljx4qs2qb41gtpMibWfaWw1ScmTyOQtAvCZl9iceNOfvM8n'
-testsecret = '3sD7wV9BgPsnCuLw2sS7Ri2PZqu1BfmJSqQHRQKqmXwRnw9MMf3HHCk6ZMITGrHt'
+testfile = open("test.txt", "r")
+realfile = open("real.txt", "r")
 
-realkey = 'W7gP8vPJErAzBa7jH2DXAtpbPV6UAdVcA7oRcvVtd1z1buH8GvhVma8cL1xrrIjt'
-realsecret = 'uEcDvInJie8QbeRzpMulgI259khhSsX18hCg0nSQoqLXEw87sAXzaFJJhWF76b0s'
+testkey = testfile.readline() 
+testsecret = testfile.readline() 
+
+realkey = realfile.readline()
+realsecret = realfile.readline()
 
 coin = 'ETHUSDT'
 
@@ -28,11 +31,30 @@ def wsmsg(ws, message):
     pprint.pprint(type(json_message))
     candle = json_message['k']
     close = candle['c']
-    high = candle['h']
-    low = candle['l']
-    vol = candle['v']
+    #high = candle['h']
+    #low = candle['l']
+    #vol = candle['v']
     closedcandle = candle['x']
+    """
+    TO DO LIST:
+    SEE IF LAST TRADE OF SELECTED COIN WAS BUY OR SELL AND USDT AVAILABLE
+    IF LAST IS BUY
+        
+        IF CURRENT PROFIT > 99% MAX PROFIT AND CURRENT PROFIT > (100 + 90% * TAKE PROFIT) * BUY PRICE
+            CURRENT PROFIT = MAX (CURRENT PROFIT, MAX PROFIT)
+        ELSE
+            STOP AT -3% STOP LOSS
+            STOP IF AVG25 CURVE IS ABOVE GRAPH
+            STOP ON SHOCK DROP
     
+    ELSE
+        IF PRICE > 101% * AVG25 AND AVG25 WAS > PRICE FOR 1 CANDLE END IN THE CURRENT SESSION AFTER LAST SELL
+            BUY
+
+
+    """
+
+
 
 
 def printas():
@@ -55,7 +77,7 @@ def printas():
     print('\n')
     print (tabulate(table,headers, tablefmt="psql"))
 
-socket = 'wss://stream.binance.com:9443/ws/ethusdt@kline_5m'
+socket = 'wss://stream.binance.com:9443/ws/ethusdt@kline_1m'
 
 ws = websocket.WebSocketApp(socket, on_open = wsopen, on_close = wsclose, on_message = wsmsg)
 

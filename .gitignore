@@ -3,3 +3,4 @@
 .Trash-*
 .nfs*
 .fuse_hidden*
+*.txt
