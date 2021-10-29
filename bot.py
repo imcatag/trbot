@@ -1,3 +1,4 @@
+from types import BuiltinMethodType
 from binance.spot import Spot as CL
 from binance.error import ClientError
 from binance.lib.utils import config_logging
@@ -6,16 +7,30 @@ from tabulate import tabulate
 import time
 import math
 
+last25 = []
+avg25 = []
+iscrypto = False
+max_profit_percent = 0
+cur_price = 0
+
 start = time.time()
 
 testfile = open("test.txt", "r")
 realfile = open("real.txt", "r")
+vassets = open("vassets.txt", "r")
 
-testkey = testfile.readline() 
-testsecret = testfile.readline() 
+amt = int(vassets.readline().strip())
+buy_price = 0
 
-realkey = realfile.readline()
-realsecret = realfile.readline()
+testkey = testfile.readline().strip() 
+testsecret = testfile.readline().strip()
+
+realkey = realfile.readline().strip()
+realsecret = realfile.readline().strip()
+
+testfile.close()
+realfile.close()
+vassets.close()
 
 coin = 'ETHUSDT'
 
@@ -26,15 +41,25 @@ def wsclose(ws):
     print('closed connection')
 
 def wsmsg(ws, message):
+    global cur_price
     print('recieved message')
     json_message = json.loads(message)
-    pprint.pprint(type(json_message))
+    pprint.pprint(json_message)
     candle = json_message['k']
-    close = candle['c']
+    cur_price = candle['c']
     #high = candle['h']
     #low = candle['l']
     #vol = candle['v']
     closedcandle = candle['x']
+
+    global last25
+    global avg25
+
+    last25.append(cur_price)
+
+    if len(last25) > 25:
+        last25 = last25[1:25]
+        avg25.append(sum(last25)/25)
     """
     TO DO LIST:
     SEE IF LAST TRADE OF SELECTED COIN WAS BUY OR SELL AND USDT AVAILABLE
@@ -48,12 +73,40 @@ def wsmsg(ws, message):
             STOP ON SHOCK DROP
     
     ELSE
-        IF PRICE > 101% * AVG25 AND AVG25 WAS > PRICE FOR 1 CANDLE END IN THE CURRENT SESSION AFTER LAST SELL
+        IF PRICE > AVG25 AND LAST CHECK WAS UNDER AVG25
             BUY
 
 
     """
+    if len(avg25) > 5:
+        global iscrypto
+        global max_profit_percent
+        global buy_price
+        global amt
+        if iscrypto:
+            current_profit_percent = (cur_price - buy_price) / 100
 
+            if current_profit_percent > max_profit_percent:
+                max_profit_percent = current_profit_percent
+
+            if max_profit_percent - current_profit_percent > 0.01:
+                iscrypto = False
+                amt = amt * cur_price
+
+            elif avg25[-1] > last25[-1] or (cur_price - buy_price) / 100 < -0.03:
+                iscrypto = False
+                amt = amt * cur_price
+
+        else: 
+            if last25[-1] > avg25[-1] and last25[-2] > avg25[-2] and last25[-3] <= last25[-3] and last25[-1] >= last25[-2] and last25[-3]:
+                iscrypto = True
+                amt = amt / cur_price
+                buy_price = cur_price
+                max_profit_percent = 0
+
+
+    response = client.get_open_orders(coin.upper())
+    print(response)
 
 
 
@@ -82,7 +135,9 @@ socket = 'wss://stream.binance.com:9443/ws/ethusdt@kline_1m'
 ws = websocket.WebSocketApp(socket, on_open = wsopen, on_close = wsclose, on_message = wsmsg)
 
 testnet = True
-
+timeclient = CL()
+#print(client.time())
+#print([testkey, testsecret])
 client = CL(testkey, testsecret, base_url='https://testnet.binance.vision')
 
 while(True):
@@ -111,22 +166,38 @@ while(True):
             testnet = False
             client = CL(realkey, realsecret, base_url='https://api1.binance.com')
 
-    elif whattodo == 'time':
-        print(client.time())
+    elif whattodo == 'time':  
+        print(timeclient.time())
 
     elif whattodo == 'start':
+        last25 = []
+        avg25 = []
+        iscrypto = False
+        max_profit_percent = 0
+        cur_price = 0
+
         ws.run_forever()
+        vassets = open("vassets.txt", "w")
+        if iscrypto:
+            amt = amt * cur_price
+            iscrypto = False
+        print(amt, file = vassets)
+        vassets.close()
+        
 
     elif whattodo == 'exit' or whattodo == 'quit' or whattodo == 'q':
         break
 
     elif whattodo == 'crypto' or whattodo == 'cr' or whattodo == 'cc':
         coin = input('Type your crypto pair: ').upper().strip()
-        socket = 'wss://stream.binance.com:9443/ws/'+ coin.lower() +'@kline_5m'
+        socket = 'wss://stream.binance.com:9443/ws/'+ coin.lower() +'@kline_1m'
         ws = websocket.WebSocketApp(socket, on_open = wsopen, on_close = wsclose, on_message = wsmsg)
 
     elif whattodo == 'yo':
         print('\nyo')
+    
+    elif whattodo == 'amt':
+        print('\n', amt)
 
     else:
         print('\nwhat\n')
@@ -138,7 +209,7 @@ stop = time.time()
 sec = math.trunc(stop - start)
 if(sec > 1):
     hr = sec // 3600
-    mn = sec // 60
+    mn = sec // 60 % 60
     sec = sec % 60
     if hr:
         print('bot ran for ', hr, 'h ', mn, 'm ', sec, 's', sep = '')
