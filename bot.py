@@ -42,9 +42,9 @@ def wsclose(ws):
 
 def wsmsg(ws, message):
     global cur_price
-    print('recieved message')
+    #print('recieved message')
     json_message = json.loads(message)
-    pprint.pprint(json_message)
+    #pprint.pprint(json_message)
     candle = json_message['k']
     cur_price = candle['c']
     #high = candle['h']
@@ -55,11 +55,12 @@ def wsmsg(ws, message):
     global last25
     global avg25
 
-    last25.append(cur_price)
+    if closedcandle:
+        last25.append(cur_price)
 
-    if len(last25) > 25:
-        last25 = last25[1:25]
-        avg25.append(sum(last25)/25)
+        if len(last25) > 25:
+            last25 = last25[1:25]
+            avg25.append(sum(last25)/25)
     """
     TO DO LIST:
     SEE IF LAST TRADE OF SELECTED COIN WAS BUY OR SELL AND USDT AVAILABLE
@@ -78,7 +79,7 @@ def wsmsg(ws, message):
 
 
     """
-    if len(avg25) > 5:
+    if len(avg25) > 5 and closedcandle:
         global iscrypto
         global max_profit_percent
         global buy_price
@@ -108,8 +109,8 @@ def wsmsg(ws, message):
                 print('bought', buy_price)
 
 
-    response = client.get_open_orders(coin.upper())
-    print(response)
+    #response = client.get_open_orders(coin.upper())
+    #print(response)
 
 
 
