@@ -12,6 +12,7 @@ avg25 = []
 iscrypto = False
 max_profit_percent = 0
 cur_price = 0
+depth = 0
 
 start = time.time()
 
@@ -19,7 +20,7 @@ testfile = open("test.txt", "r")
 realfile = open("real.txt", "r")
 vassets = open("vassets.txt", "r")
 
-amt = int(vassets.readline().strip())
+amt = float(vassets.readline().strip())
 buy_price = 0
 
 testkey = testfile.readline().strip() 
@@ -42,11 +43,12 @@ def wsclose(ws):
 
 def wsmsg(ws, message):
     global cur_price
+    global depth
     #print('recieved message')
     json_message = json.loads(message)
     #pprint.pprint(json_message)
     candle = json_message['k']
-    cur_price = candle['c']
+    cur_price = float(candle['c'])
     #high = candle['h']
     #low = candle['l']
     #vol = candle['v']
@@ -55,12 +57,25 @@ def wsmsg(ws, message):
     global last25
     global avg25
 
+    
     if closedcandle:
         last25.append(cur_price)
-
+        depth += 1
+        print(depth)
         if len(last25) > 25:
-            last25 = last25[1:25]
+            last25 = last25[1:26]
             avg25.append(sum(last25)/25)
+
+        try:
+            print(last25[-2],last25[-1])
+        except:
+            pass
+
+        try:
+            print(avg25[-2],avg25[-1])
+        except:
+            pass
+
     """
     TO DO LIST:
     SEE IF LAST TRADE OF SELECTED COIN WAS BUY OR SELL AND USDT AVAILABLE
@@ -79,7 +94,12 @@ def wsmsg(ws, message):
 
 
     """
-    if len(avg25) > 5 and closedcandle:
+
+    
+
+    if len(avg25) > 10:
+        avg25 = avg25[1:11]
+    if len(avg25) >= 2:
         global iscrypto
         global max_profit_percent
         global buy_price
@@ -87,26 +107,26 @@ def wsmsg(ws, message):
         if iscrypto:
             current_profit_percent = (cur_price - buy_price) / 100
 
-            if current_profit_percent > max_profit_percent:
-                max_profit_percent = current_profit_percent
+            if current_profit_percent - 0.02 > max_profit_percent:
+                max_profit_percent = current_profit_percent - 0.02
 
-            if max_profit_percent - current_profit_percent > 0.01:
+            if current_profit_percent < max_profit_percent:
                 iscrypto = False
                 amt = amt * cur_price
-                print('sold', amt)
+                print('sold 1: ', amt)
 
             elif avg25[-1] > last25[-1] or (cur_price - buy_price) / 100 < -0.03:
                 iscrypto = False
                 amt = amt * cur_price
-                print('sold', amt)
+                print('sold 2: ', amt)
 
         else: 
-            if last25[-1] > avg25[-1] and last25[-2] > avg25[-2] and last25[-3] <= last25[-3] and last25[-1] >= last25[-2] and last25[-3]:
+            if last25[-1] > avg25[-1] and last25[-2] < avg25[-2] and last25[-1] >= last25[-2]:
                 iscrypto = True
                 amt = amt / cur_price
                 buy_price = cur_price
-                max_profit_percent = 0
-                print('bought', buy_price)
+                max_profit_percent = -0.02
+                print('bought ', buy_price)
 
 
     #response = client.get_open_orders(coin.upper())
