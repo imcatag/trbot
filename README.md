@@ -15,7 +15,6 @@ test.txt, containing your test server api key on line 1 and secret key on line 2
 Dependencies:
 
 ---
-**NOTE**
 
 pip install binance-connector tabulate websocket-client
 
