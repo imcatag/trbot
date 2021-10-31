@@ -13,6 +13,9 @@ iscrypto = False
 max_profit_percent = 0
 cur_price = 0
 depth = 0
+boughtcandle = False
+soldcandle = False
+
 
 start = time.time()
 
@@ -42,8 +45,7 @@ def wsclose(ws):
     print('closed connection')
 
 def wsmsg(ws, message):
-    global cur_price
-    global depth
+    global cur_price, depth
     #print('recieved message')
     json_message = json.loads(message)
     #pprint.pprint(json_message)
@@ -54,9 +56,7 @@ def wsmsg(ws, message):
     #vol = candle['v']
     closedcandle = candle['x']
 
-    global last25
-    global avg25
-
+    global last25, avg25
     
     if closedcandle:
         last25.append(cur_price)
@@ -75,6 +75,9 @@ def wsmsg(ws, message):
             print(avg25[-2],avg25[-1])
         except:
             pass
+
+        boughtcandle = False
+        soldcandle = False
 
     """
     TO DO LIST:
@@ -100,33 +103,35 @@ def wsmsg(ws, message):
     if len(avg25) > 10:
         avg25 = avg25[1:11]
     if len(avg25) >= 2:
-        global iscrypto
-        global max_profit_percent
-        global buy_price
-        global amt
+
+        global iscrypto, max_profit_percent, buy_price, amt
+
         if iscrypto:
-            current_profit_percent = (cur_price - buy_price) / 100
+            current_profit_percent = (cur_price - buy_price) / cur_price
 
             if current_profit_percent - 0.02 > max_profit_percent:
                 max_profit_percent = current_profit_percent - 0.02
 
-            if current_profit_percent < max_profit_percent:
+            if current_profit_percent < max_profit_percent and not boughtcandle:
                 iscrypto = False
                 amt = amt * cur_price
-                print('sold 1: ', amt)
+                print('/ / / / / / / / / sold @ ', cur_price, '\n', amt)
+                soldcandle = True
 
-            elif avg25[-1] > last25[-1] or (cur_price - buy_price) / 100 < -0.03:
+            elif avg25[-1] > last25[-1] or (cur_price - buy_price) / 100 < -0.03 and not boughtcandle:
                 iscrypto = False
                 amt = amt * cur_price
-                print('sold 2: ', amt)
+                print('/ / / / / / / / / sold @ ', cur_price, '\n', amt)
+                soldcandle = True
 
         else: 
-            if last25[-1] > avg25[-1] and last25[-2] < avg25[-2] and last25[-1] >= last25[-2]:
+            if last25[-1] > avg25[-1] and last25[-2] < avg25[-2] and last25[-1] >= last25[-2] and not soldcandle:
                 iscrypto = True
                 amt = amt / cur_price
                 buy_price = cur_price
                 max_profit_percent = -0.02
-                print('bought ', buy_price)
+                print('+ + + + + + + + + bought @ ', buy_price)
+                boughtcandle = True
 
 
     #response = client.get_open_orders(coin.upper())
