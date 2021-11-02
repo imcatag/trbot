@@ -1,4 +1,4 @@
-# trbot
+# trbot - Work in progress!
 
 CLI Binance Trading Bot
 
