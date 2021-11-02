@@ -9,13 +9,15 @@ import math
 
 last25 = []
 avg25 = []
+rsi = []
 iscrypto = False
 max_profit_percent = 0
 cur_price = 0
 depth = 0
 boughtcandle = False
 soldcandle = False
-
+posdiff = []
+negdiff = []
 
 start = time.time()
 
@@ -56,76 +58,74 @@ def wsmsg(ws, message):
     #vol = candle['v']
     closedcandle = candle['x']
 
-    global last25, avg25
+    global last25, avg25, rsi, posdiff, negdiff
     
     if closedcandle:
         last25.append(cur_price)
         depth += 1
         print(depth)
         if len(last25) > 25:
-            last25 = last25[1:26]
+            last25 = last25[1:]
             avg25.append(sum(last25)/25)
 
         try:
-            print(last25[-2],last25[-1])
+            print(last25[-3], last25[-2],last25[-1])
         except:
             pass
 
         try:
-            print(avg25[-2],avg25[-1])
+            print(avg25[-3], avg25[-2],avg25[-1])
         except:
             pass
 
         boughtcandle = False
         soldcandle = False
 
-    """
-    TO DO LIST:
-    SEE IF LAST TRADE OF SELECTED COIN WAS BUY OR SELL AND USDT AVAILABLE
-    IF LAST IS BUY
-        
-        IF CURRENT PROFIT > 99% MAX PROFIT AND CURRENT PROFIT > (100 + 90% * TAKE PROFIT) * BUY PRICE
-            CURRENT PROFIT = MAX (CURRENT PROFIT, MAX PROFIT)
-        ELSE
-            STOP AT -3% STOP LOSS
-            STOP IF AVG25 CURVE IS ABOVE GRAPH
-            STOP ON SHOCK DROP
-    
-    ELSE
-        IF PRICE > AVG25 AND LAST CHECK WAS UNDER AVG25
-            BUY
+        diff = last25[-1] - last25[-2]
 
+        if diff > 0:
+            posdiff.append(diff)
+            negdiff.append(0)
+        else:
+            negdiff.append(abs(diff))
+            posdiff.append(0)
+            
 
-    """
+        if depth > 14:
+                negdiff = negdiff[1:]
+                posdiff = posdiff[1:]
 
-    
+        rsi.append(100 - (100 / (1 + (sum(posdiff) / 14) / (sum(negdiff) / 14))))
 
-    if len(avg25) > 10:
-        avg25 = avg25[1:11]
-    if len(avg25) >= 2:
+        print (rsi)
+
+    if len(avg25) > 25:
+        avg25 = avg25[1:]
+    if len(avg25) >= 14:
 
         global iscrypto, max_profit_percent, buy_price, amt
 
         if iscrypto:
             current_profit_percent = (cur_price - buy_price) / cur_price
+            
+            if current_profit_percent - 0.015 > max_profit_percent:
+                max_profit_percent = current_profit_percent - 0.015
 
-            if current_profit_percent - 0.02 > max_profit_percent:
-                max_profit_percent = current_profit_percent - 0.02
+            if current_profit_percent > 0:
+                if current_profit_percent < max_profit_percent and not boughtcandle:
+                    iscrypto = False
+                    amt = amt * cur_price
+                    print('/ / / / / / / / / sold @ ', cur_price, '\n', amt)
+                    soldcandle = True
 
-            if current_profit_percent < max_profit_percent and not boughtcandle:
-                iscrypto = False
-                amt = amt * cur_price
-                print('/ / / / / / / / / sold @ ', cur_price, '\n', amt)
-                soldcandle = True
-
-            elif avg25[-1] > last25[-1] or (cur_price - buy_price) / 100 < -0.03 and not boughtcandle:
-                iscrypto = False
-                amt = amt * cur_price
-                print('/ / / / / / / / / sold @ ', cur_price, '\n', amt)
-                soldcandle = True
+                elif avg25[-1] > last25[-1] or (cur_price - buy_price) / 100 < -0.03 and not boughtcandle:
+                    iscrypto = False
+                    amt = amt * cur_price
+                    print('/ / / / / / / / / sold @ ', cur_price, '\n', amt)
+                    soldcandle = True
 
         else: 
-            if last25[-1] > avg25[-1] and last25[-2] < avg25[-2] and last25[-1] >= last25[-2] and not soldcandle:
+            if last25[-1] > avg25[-1] and last25[-2] > avg25[-2] and last25[-3] <= avg25[-3] and last25[-1] >= last25[-2] and last25[-2] >= last25[-3] and not soldcandle:
                 iscrypto = True
                 amt = amt / cur_price
                 buy_price = cur_price
@@ -159,7 +159,7 @@ def printas():
     print('\n')
     print (tabulate(table,headers, tablefmt="psql"))
 
-socket = 'wss://stream.binance.com:9443/ws/ethusdt@kline_1m'
+socket = 'wss://stream.binance.com:9443/ws/ethusdt@kline_5m'
 
 ws = websocket.WebSocketApp(socket, on_open = wsopen, on_close = wsclose, on_message = wsmsg)
 
@@ -204,7 +204,9 @@ while(True):
         iscrypto = False
         max_profit_percent = 0
         cur_price = 0
-
+        rsi = []
+        posdiff = []
+        negdiff = []
         ws.run_forever()
         vassets = open("vassets.txt", "w")
         if iscrypto:
@@ -219,7 +221,7 @@ while(True):
 
     elif whattodo == 'crypto' or whattodo == 'cr' or whattodo == 'cc':
         coin = input('Type your crypto pair: ').upper().strip()
-        socket = 'wss://stream.binance.com:9443/ws/'+ coin.lower() +'@kline_1m'
+        socket = 'wss://stream.binance.com:9443/ws/'+ coin.lower() +'@kline_5m'
         ws = websocket.WebSocketApp(socket, on_open = wsopen, on_close = wsclose, on_message = wsmsg)
 
     elif whattodo == 'yo':
