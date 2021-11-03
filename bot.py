@@ -18,6 +18,8 @@ boughtcandle = False
 soldcandle = False
 posdiff = []
 negdiff = []
+avggain = []
+avgloss = []
 
 start = time.time()
 
@@ -58,7 +60,7 @@ def wsmsg(ws, message):
     #vol = candle['v']
     closedcandle = candle['x']
 
-    global last25, avg25, rsi, posdiff, negdiff
+    global last25, avg25, rsi, posdiff, negdiff, avggain, avgloss
     
     if closedcandle:
         last25.append(cur_price)
@@ -67,49 +69,89 @@ def wsmsg(ws, message):
         if len(last25) > 25:
             last25 = last25[1:]
             avg25.append(sum(last25)/25)
-
+        
         try:
             print(last25[-3], last25[-2],last25[-1])
         except:
             pass
-
+        """
         try:
             print(avg25[-3], avg25[-2],avg25[-1])
         except:
             pass
-
+        """
         boughtcandle = False
         soldcandle = False
 
         diff = last25[-1] - last25[-2]
 
-        if diff > 0:
-            posdiff.append(diff)
-            negdiff.append(0)
-        else:
-            negdiff.append(abs(diff))
-            posdiff.append(0)
+        if depth <= 16:
+            if diff > 0:
+                posdiff.append(diff)
+                negdiff.append(0)
+            else:
+                negdiff.append(abs(diff))
+                posdiff.append(0)
             
 
-        if depth > 14:
-                negdiff = negdiff[1:]
-                posdiff = posdiff[1:]
+        if depth == 16:
+            negdiff = negdiff[1:]
+            posdiff = posdiff[1:]
 
-        rsi.append(100 - (100 / (1 + (sum(posdiff) / 14) / (sum(negdiff) / 14))))
+            avggain.append(sum(posdiff)/14)
+            avgloss.append(sum(negdiff)/14)
 
-        print (rsi)
+            rsi.append(100 - (100 / (1 + avggain[-1] / avgloss[-1] )))
+ 
+
+        if depth > 16:
+
+            if diff > 0:
+                avggain.append((avggain[-1] * 13 + diff) / 14)
+                avgloss.append((avgloss[-1] * 13) / 14)
+            else:
+                avgloss.append((avgloss[-1] * 13 + abs(diff)) / 14)
+                avggain.append((avggain[-1] * 13) / 14)
+
+            rsi.append(100 - (100 / (1 + avggain[-1] / avgloss[-1] )))
+
+            avgloss = avgloss[1:]
+            avggain = avggain[1:]
+
+        print ('\ndiff: ', diff, '\n')
+        print ('avggain: ', avggain, '\n')
+        print ('avgloss: ', avgloss, '\n')
+        print ('rsi: ', rsi, '\n')
 
     if len(avg25) > 25:
         avg25 = avg25[1:]
-    if len(avg25) >= 14:
+
+    if depth > 16 and closedcandle:
+        global iscrypto, amt
+
+        if iscrypto:
+            if rsi[-1] > 72:
+                amt = amt * cur_price
+                print('/ / / / / / / / / sold @ ', cur_price, '\n', amt)
+                iscrypto = False
+        else:
+            if rsi[-1] < 33:
+                print('+ + + + + + + + + bought @ ', cur_price, '\n')
+                iscrypto = True
+                amt = amt / cur_price
+
+
+    
+    """
+    if depth > 15: #BUYING AND SELLING
 
         global iscrypto, max_profit_percent, buy_price, amt
 
         if iscrypto:
             current_profit_percent = (cur_price - buy_price) / cur_price
             
-            if current_profit_percent - 0.015 > max_profit_percent:
-                max_profit_percent = current_profit_percent - 0.015
+            #if current_profit_percent - 0.015 > max_profit_percent:
+            #    max_profit_percent = current_profit_percent - 0.015
 
             if current_profit_percent > 0:
                 if current_profit_percent < max_profit_percent and not boughtcandle:
@@ -132,7 +174,7 @@ def wsmsg(ws, message):
                 max_profit_percent = -0.02
                 print('+ + + + + + + + + bought @ ', buy_price)
                 boughtcandle = True
-
+    """
 
     #response = client.get_open_orders(coin.upper())
     #print(response)
