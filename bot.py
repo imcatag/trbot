@@ -40,7 +40,6 @@ testfile.close()
 realfile.close()
 vassets.close()
 
-coin = 'ETHUSDT'
 
 def wsopen(ws):
     print('opened connection')
@@ -74,12 +73,11 @@ def wsmsg(ws, message):
             print(last25[-3], last25[-2],last25[-1])
         except:
             pass
-        """
         try:
             print(avg25[-3], avg25[-2],avg25[-1])
         except:
             pass
-        """
+
         boughtcandle = False
         soldcandle = False
 
@@ -127,22 +125,23 @@ def wsmsg(ws, message):
         avg25 = avg25[1:]
 
     if depth > 16 and closedcandle:
-        global iscrypto, amt
+        global iscrypto, amt, buy_price
 
         if iscrypto:
-            if rsi[-1] > 72:
+            if (rsi[-1] >= 72) or (rsi[-1] > 70 and rsi[-2] < 70) or ( ((cur_price - buy_price) / cur_price) > 0.03 and avg25[-1] > last25[-1]):
                 amt = amt * cur_price
                 print('/ / / / / / / / / sold @ ', cur_price, '\n', amt)
                 iscrypto = False
         else:
-            if rsi[-1] < 33:
+            if rsi[-2] < 30 and rsi[-1] >=  30:
                 print('+ + + + + + + + + bought @ ', cur_price, '\n')
+                buy_price = cur_price
                 iscrypto = True
                 amt = amt / cur_price
 
 
     
-    """
+    """ OLD CONDITIONS
     if depth > 15: #BUYING AND SELLING
 
         global iscrypto, max_profit_percent, buy_price, amt
@@ -200,6 +199,8 @@ def printas():
     headers = ['ASSET', 'FREE', 'LOCKED']
     print('\n')
     print (tabulate(table,headers, tablefmt="psql"))
+
+coin = 'ETHUSDT'
 
 socket = 'wss://stream.binance.com:9443/ws/ethusdt@kline_5m'
 
