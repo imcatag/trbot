@@ -115,7 +115,10 @@ def wsmsg(ws, message):
 
             avgloss = avgloss[1:]
             avggain = avggain[1:]
-
+            
+        if len(rsi) > 25:
+            rsi = rsi[1:]
+            
         print ('\ndiff: ', diff, '\n')
         print ('avggain: ', avggain, '\n')
         print ('avgloss: ', avgloss, '\n')
