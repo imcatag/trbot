@@ -128,7 +128,7 @@ def wsmsg(ws, message):
         global iscrypto, amt, buy_price
 
         if iscrypto:
-            if (rsi[-1] >= 72) or (rsi[-1] > 70 and rsi[-2] < 70) or ( ((cur_price - buy_price) / cur_price) > 0.03 and avg25[-1] > last25[-1]):
+            if (rsi[-1] >= 72) or (rsi[-2] > 70 and rsi[-1] < 70) or ( ((cur_price - buy_price) / cur_price) > 0.01 and avg25[-1] > last25[-1]):
                 amt = amt * cur_price
                 print('/ / / / / / / / / sold @ ', cur_price, '\n', amt)
                 iscrypto = False
@@ -202,7 +202,7 @@ def printas():
 
 coin = 'ETHUSDT'
 
-socket = 'wss://stream.binance.com:9443/ws/ethusdt@kline_5m'
+socket = 'wss://stream.binance.com:9443/ws/ethusdt@kline_1m'
 
 ws = websocket.WebSocketApp(socket, on_open = wsopen, on_close = wsclose, on_message = wsmsg)
 
@@ -264,7 +264,7 @@ while(True):
 
     elif whattodo == 'crypto' or whattodo == 'cr' or whattodo == 'cc':
         coin = input('Type your crypto pair: ').upper().strip()
-        socket = 'wss://stream.binance.com:9443/ws/'+ coin.lower() +'@kline_5m'
+        socket = 'wss://stream.binance.com:9443/ws/'+ coin.lower() +'@kline_1m'
         ws = websocket.WebSocketApp(socket, on_open = wsopen, on_close = wsclose, on_message = wsmsg)
 
     elif whattodo == 'yo':
