@@ -2,6 +2,18 @@
 
 CLI Binance Trading Bot
 
+
+
+<p  align="center">
+
+  
+
+<a> [<img src="https://forthebadge.com/images/badges/60-percent-of-the-time-works-every-time.svg" alt="forthebadge"/>](https://forthebadge.com/) </a>
+
+  
+
+</p>
+
 Dependencies:
 
 ---
